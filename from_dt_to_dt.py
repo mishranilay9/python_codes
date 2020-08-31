@@ -58,9 +58,11 @@ def perform_delta_identification(current_df, previous_hash_df, primary_key):
 
 
 def main():
-
-
-    spark = SparkSession.builder.master("local[*]").appName("PythonWordCount").getOrCreate()
+    spark = SparkSession.builder.master("local").enableHiveSupport().getOrCreate()
+    spark.conf.set("spark.executor.memory", '1g')
+    spark.conf.set('spark.executor.cores', '1')
+    spark.conf.set('spark.cores.max', '1')
+    spark.conf.set("spark.driver.memory", '1g')
     publish_data_before_filter=spark.createDataFrame(
         [
             (1,"a",'foo','2010-08-03','2099-01-01'),  # create your data here, be consistent in the types.
@@ -101,4 +103,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    #spark-submit C:\Users\Nilay\PycharmProjects\Finaltst\from_dt_to_dt.py > C:\Users\Nilay\Desktop\nil1.txt 2>&1
+    #spark-submit C:\Users\Nilay\PycharmProjects\Finaltst\from_dt_to_dt.py --executor-memory 5G --total-executor-cores 2  > C:\Users\Nilay\Desktop\nil1.txt 2>&1

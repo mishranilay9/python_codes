@@ -1,46 +1,44 @@
+import json
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import struct, udf
+from pyspark.sql.types import StringType
+import pyspark.sql.functions as F
+from datetime import date, datetime
+from collections import OrderedDict
 
+def func(row):
+    temp=row.asDict()
+    headDict = {}
+    headDict['type'] = "record"
+    headDict['name'] = "source"
+    headDict['namespace'] = "com.streaming.event"
+    headDict['doc'] = "SCD signals from  source123"
+    fieldslist = []
+    headDict['fields'] = fieldslist
+    for i in temp:
+        fieldslist.append({i:temp[i]})
+    return (json.dumps(headDict,default=str))
+def json_serial(obj):
+    """JSON serializer for objects not serializable by default json code"""
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    raise TypeError ("Type %s not serializable" % type(obj))
 if __name__ == "__main__":
     spark = SparkSession.builder.master("local[*]").appName("PythonWordCount").getOrCreate()
-    df = spark.createDataFrame(
+    payload=udf(func,StringType())
+    data = spark.createDataFrame(
         [
-            (1,"a",'foo1',4,5),  # create your data here, be consistent in the types.
-            (2,"b",'bar',4,6),
-            (3,"c",'mnc',4,7),
-            (3, "c", 'mnc', 4, 7)
+            (1, "a", 'foo1','2020-02-03',-23.0),  # create your data here, be consistent in the types.
+            (2, "b", 'bar','2020-02-03',56.789),
+            (3, "c", 'mnc','2020-02-03',None)
         ],
-        ['a','b','c','d','e']
-    )# add your columns label here
-    df.createOrReplaceTempView("table")
-    query="""
-    SELECT 
-        x.a as a_1,
-        x.b as b_1,
-        x.c as c_1,
-        x.d as d_1,
-        x.e as e_1 FROM (SELECT a,b,c,d,e,
-    ROW_NUMBER() OVER (PARTITION BY d, e order by d,e) as cnt FROM table  ) x
-    WHERE cnt = 1
-    """
-    query2="""SELECT a,b,c,d,e,
-    ROW_NUMBER() OVER (PARTITION BY d, e order by d,e) as cnt FROM table
-    """
-    query1="""
-    SELECT 
-        x.a as a_1,
-        x.b as b_1,
-        x.c as c_1,
-        x.d as d_1,
-        x.e as e_1 FROM (SELECT a,b,c,d,e,
-    ROW_NUMBER() OVER (PARTITION BY a order by a) as cnt FROM table  ) x
-    where cnt=1
-    """
-    df2=spark.sql(query2)
-    df2.show()
-   # df3=spark.sql(query1)
-   # df3.show()
-
-
-
-
-
+        ['id', 'am', 'txt','dt','rate']  # add your columns label here
+    )
+    l=[]
+    for c in data.columns:
+        l.append(c)
+    print(l)
+    data=data.withColumn("dt",F.col("dt").cast('date'))
+    df=data.withColumn("payload1",payload(struct([data[x] for x in data.columns])))
+    #df=data.withColumn("payload1", payload(struct([F.when(data[x].isNotNull(), data[x]).otherwise(F.lit("")).alias(x) for x in data.columns])))
+    df.select("payload1").show(3,False)
