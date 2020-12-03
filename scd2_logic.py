@@ -103,4 +103,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-    #spark-submit C:\Users\Nilay\PycharmProjects\Finaltst\from_dt_to_dt.py --executor-memory 5G --total-executor-cores 2  > C:\Users\Nilay\Desktop\nil1.txt 2>&1
+    #spark-submit C:\Users\Nilay\PycharmProjects\Finaltst\scd2_logic.py --executor-memory 5G --total-executor-cores 2  > C:\Users\Nilay\Desktop\nil1.txt 2>&1
